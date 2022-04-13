@@ -26,7 +26,7 @@ DB = class {
   }
   exit () {
     return new Promise((resolve, reject) => {
-      connection.end(function (err) {
+      this.connection.end(function (err) {
         if (err) reject(err)
         resolve(this)
       })
