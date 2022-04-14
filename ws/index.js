@@ -1,11 +1,11 @@
-const { Server } = require("socket.io");
+const { Server } = require('socket.io')
 
 module.exports = function (server) {
   const io = new Server(server, {
     cors: {
-      origin: ["http://localhost:8080",],
-    },
-  });
+      origin: ['http://localhost:8080']
+    }
+  })
 
   io.on('connection', socket => {
     socket.emit('success', { message: '我连接到服务器' })
@@ -21,6 +21,3 @@ module.exports = function (server) {
   })
   return io
 }
-
-
-
