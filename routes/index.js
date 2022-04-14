@@ -17,10 +17,10 @@ router.post('/room_create', async function (req, res, next) {
     let results
     const db = new DB();
     await db.init();
-    results = await db.query('SELECT * from user', [user_id])
+    results = await db.query('SELECT * from user WHERE ID = ?', [user_id])
     const user_name = results[0].name
     await db.query('UPDATE user SET room_id = ? WHERE id = ?', [room_id, user_id])
-    await db.query('INSERT INTO ROOM(id,name,host_name,host_id,gamer_name,gamer_id,qipan_id) VALUES(?,?,?,?,?,?,?)', [room_id, room_name, user_name, user_id, '', '', qipan_id])
+    await db.query('INSERT INTO ROOM(id,name,host,host_id,gamer,gamer_id,qipan_id) VALUES(?,?,?,?,?,?,?)', [room_id, room_name, user_name, user_id, '', '', qipan_id])
     await db.query('INSERT INTO qipan(id,status,qizis,result) VALUES(?,?,?,?)', [qipan_id, 0, '', 0])
     await db.exit()
     res.send({
