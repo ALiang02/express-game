@@ -10,6 +10,7 @@ module.exports.idGenerate = function (type) {
       count = 6000
       break
   }
+
   const time = new Date()
   const month = time.getMonth() + 1 + ''
   const date = time.getDate() + ''

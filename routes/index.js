@@ -10,6 +10,27 @@ router.post('/hello', function (req, res, next) {
     message: 'hello,world!'
   })
 })
+router.post('/save', async function (req, res, next) {
+  try {
+    const user_id = req.body.user_id; const user = req.body.data.user
+    const db = new DB()
+    await db.init()
+    await db.query('UPDATE user SET name = ? , password = ?  WHERE id = ?', [user.name, user.password, user_id])
+    await db.exit()
+    res.send({
+      code: 0,
+      message: 'success',
+      data: {
+        user
+      }
+    })
+  } catch (error) {
+    res.send({
+      code: 1,
+      message: error
+    })
+  }
+})
 router.post('/room_create', async function (req, res, next) {
   // 创建房间
   try {
