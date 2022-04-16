@@ -150,5 +150,74 @@ router.post('/room_quit', async function (req, res, next) {
   }
 })
 
+router.post('/room_ready', async function (req, res, next) {
+  // 加入房间
+  try {
+    const room_id = req.body.room_id
+    const db = new DB()
+    await db.init()
+    await db.query('UPDATE room SET status = ?  WHERE id = ?', [2, room_id])
+    await db.exit()
+    res.send({
+      code: 0,
+      message: 'success',
+      data: {
+
+      }
+    })
+  } catch (error) {
+    res.send({
+      code: 1,
+      message: error
+    })
+  }
+})
+
+router.post('/room_ready_cancel', async function (req, res, next) {
+  // 加入房间
+  try {
+    const room_id = req.body.room_id
+    const db = new DB()
+    await db.init()
+    await db.query('UPDATE room SET status = ?  WHERE id = ?', [1, room_id])
+    await db.exit()
+    res.send({
+      code: 0,
+      message: 'success',
+      data: {
+
+      }
+    })
+  } catch (error) {
+    res.send({
+      code: 1,
+      message: error
+    })
+  }
+})
+
+router.post('/room_start', async function (req, res, next) {
+  // 加入房间
+  try {
+    const room_id = req.body.room_id
+    const db = new DB()
+    await db.init()
+    await db.query('UPDATE room SET status = ?  WHERE id = ?', [3, room_id])
+    await db.exit()
+    res.send({
+      code: 0,
+      message: 'success',
+      data: {
+
+      }
+    })
+  } catch (error) {
+    res.send({
+      code: 1,
+      message: error
+    })
+  }
+})
+
 // 导出路由
 module.exports = router
