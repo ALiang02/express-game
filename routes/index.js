@@ -54,7 +54,8 @@ router.post('/room_create', async function (req, res, next) {
           host: user_name,
           gamer: '',
           status: 0
-        }
+        },
+        qipan_id
       }
     })
   } catch (error) {
@@ -93,10 +94,12 @@ router.post('/room_join', async function (req, res, next) {
     const room_id = req.body.data.room.id
     const db = new DB()
     await db.init()
-    const results = await db.query('SELECT * from user WHERE id = ?', [user_id])
+    let results = await db.query('SELECT * from user WHERE id = ?', [user_id])
     const user_name = results[0].name
     await db.query('UPDATE user SET room_id = ?  WHERE id = ?', [room_id, user_id])
     await db.query('UPDATE room SET gamer = ?, gamer_id = ?, status = ? WHERE id = ?', [user_name, user_id, 1, room_id])
+    results = await db.query('SELECT * from room WHERE id = ?', [room_id])
+    const qipan_id = results[0].qipan_id
     await db.exit()
     res.send({
       code: 0,
@@ -104,7 +107,8 @@ router.post('/room_join', async function (req, res, next) {
       data: {
         room: {
           id: room_id
-        }
+        },
+        qipan_id
       }
     })
   } catch (error) {
@@ -118,6 +122,7 @@ router.post('/room_quit', async function (req, res, next) {
   // 加入房间
   try {
     const user_id = req.body.user_id
+    const qipan_id = req.body.qipan_id
     const db = new DB()
     await db.init()
     const users = await db.query('SELECT * from user WHERE id = ?', [user_id])
@@ -126,6 +131,7 @@ router.post('/room_quit', async function (req, res, next) {
     const rooms = await db.query('SELECT * from room WHERE id = ?', [room_id])
     if (user_id === rooms[0].host_id && rooms[0].gamer_id === '') {
       // 房主退出删除房间
+      await db.query('DELETE FROM qipan WHERE id = ?', [qipan_id])
       await db.query('DELETE FROM room WHERE id = ?', [room_id])
     } else if (user_id === rooms[0].host_id && rooms[0].gamer_id !== '') {
       // 房主退出转移房主
@@ -200,15 +206,18 @@ router.post('/room_start', async function (req, res, next) {
   // 加入房间
   try {
     const room_id = req.body.room_id
+    const qipan_id = req.body.qipan_id
     const db = new DB()
     await db.init()
+    await db.query('UPDATE qipan SET qizis = ?  WHERE id = ?', ['', qipan_id])
     await db.query('UPDATE room SET status = ?  WHERE id = ?', [3, room_id])
+    const results = await db.query('SELECT * from qipan WHERE id = ?', [qipan_id])
     await db.exit()
     res.send({
       code: 0,
       message: 'success',
       data: {
-
+        status: results[0].status
       }
     })
   } catch (error) {
@@ -218,6 +227,78 @@ router.post('/room_start', async function (req, res, next) {
     })
   }
 })
+
+router.post('/xiaqi', async function (req, res, next) {
+  // 加入房间
+  try {
+    const room_id = req.body.room_id
+    const qipan_id = req.body.qipan_id
+    const qizi = req.body.data.qizi.x + ',' + req.body.data.qizi.y
+    const db = new DB()
+    await db.init()
+    const results = await db.query('SELECT * from qipan WHERE id = ?', [qipan_id])
+    let qizisStr
+    if (results[0].qizis === '') {
+      qizisStr = qizi
+    } else {
+      qizisStr = results[0].qizis + ' ' + qizi
+    }
+    await db.query('UPDATE qipan SET qizis = ?  WHERE id = ?', [qizisStr, qipan_id])
+    const line = victoryJudge(qizisStr)
+    if (line) {
+      await db.query('UPDATE room SET status = ?  WHERE id = ?', [1, room_id])
+    }
+    await db.exit()
+    res.send({
+      code: 0,
+      message: 'success',
+      data: {
+        victory: !!line,
+        line
+      }
+    })
+  } catch (error) {
+    res.send({
+      code: 1,
+      message: error
+    })
+  }
+})
+
+const victoryJudge = function (qizisStr) {
+  console.log(qizisStr)
+  const qizis = qizisStr.split(' ').map(qizi => {
+    qizi = qizi.split(',')
+    return {
+      x: parseInt(qizi[0]),
+      y: parseInt(qizi[1])
+    }
+  })
+  const line = check(0, 1, qizis) || check(1, 0, qizis) || check(1, 1, qizis) || check(1, -1, qizis)
+  return line
+}
+
+const check = function (east, north, qizis) {
+  let line = []
+  const n = qizis.length - 1
+  const x = qizis[n].x
+  const y = qizis[n].y
+
+  for (let i = -4; i <= 4; i++) {
+    for (let j = n % 2; j <= n; j += 2) {
+      if (qizis[j].x === x + east * i && qizis[j].y === y + north * i) {
+        line.push(qizis[j])
+        if (line.length === 5) {
+          return line
+        }
+        break
+      } else if (j === n || j === n - 1) {
+        line = []
+      }
+    }
+  }
+  return false
+}
 
 // 导出路由
 module.exports = router

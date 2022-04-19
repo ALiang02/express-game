@@ -37,7 +37,13 @@ module.exports = function (server) {
       socket.to(data.room).emit('room_ready_cancel', { status: data.status })
     })
     socket.on('room_start', data => {
-      socket.to(data.room).emit('room_start', { status: data.status })
+      socket.to(data.room).emit('room_start', { status: data.status, turn: data.turn })
+    })
+    socket.on('xiaqi', data => {
+      socket.to(data.room).emit('xiaqi', { qizi: data.qizi })
+    })
+    socket.on('victory', data => {
+      socket.to(data.room).emit('victory', { line: data.line })
     })
   })
   return io
