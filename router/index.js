@@ -148,5 +148,119 @@ router.post('/room_create', async function (req, res, next) {
   }
   res.send(rep_data)
 })
+
+router.post('/room_join', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.data.id
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) {
+      const user_id = results[0].id
+      const user_name = results[0].name
+      results = await db.query('SELECT status from room where id = ?', [room_id])
+      if (results.length > 0) {
+        if (results[0].status === 0) {
+          await db.query('UPDATE room SET gamer = ?, status = ? WHERE id = ?', [user_id, 1, room_id])
+          await db.query('UPDATE user SET room = ? WHERE id = ?', [room_id, user_id])
+          results = await db.query('SELECT room.id, room.name, user.name as host_name, status FROM room JOIN user ON room.host = user.id  WHERE room.id = ?', [room_id])
+          rep_data = {
+            code: 0,
+            message: 'success',
+            data: {
+              id: results[0].id,
+              name: results[0].name,
+              host: results[0].host_name,
+              gamer: user_name,
+              status: results[0].status
+            }
+          }
+        } else {
+          rep_data = {
+            code: 1,
+            message: '房间状态错误'
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error
+    }
+  }
+  res.send(rep_data)
+})
+router.post('/room_quit', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.room
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) { // 判断是否有这个用户
+      const user_id = results[0].id
+      results = await db.query('SELECT host, gamer from room where id = ?', [room_id])
+      if (results.length > 0) { // 判断是否有这个房间
+        await db.query('UPDATE user SET room = ? WHERE id = ?', [null, user_id])
+        if (results[0].gamer === user_id) { // 判断该用户是房主还是玩家
+          await db.query('UPDATE room SET gamer = ?, status = ? WHERE id = ?', [null, 0, room_id])
+          rep_data = {
+            code: 0,
+            message: 'success'
+          }
+        } else if (results[0].gamer === null && results[0].host === user_id) {
+          await db.query('DELETE FROM room WHERE id = ?', [room_id])
+          rep_data = {
+            code: 0,
+            message: 'success'
+          }
+        } else if (results[0].gamer !== null && results[0].host === user_id) {
+          await db.query('UPDATE room SET host = ?, gamer = ? , stauts = ? WHERE id = ?', [results[0].gamer, null, 0, user_id])
+          rep_data = {
+            code: 0,
+            message: 'success'
+          }
+        } else {
+          rep_data = {
+            code: 1,
+            message: '玩家不在房间'
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error
+    }
+  }
+  res.send(rep_data)
+})
 // 导出路由
 module.exports = router
