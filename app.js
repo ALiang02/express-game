@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser')
 const bodyParser = require('body-parser')
 const http = require('http')
 const router = require('./routes')
+const myRouter = require('./router')
 const ws = require('./ws')
 
 const app = express()
@@ -26,6 +27,7 @@ app.use(cookieParser())
 app.use(express.static('./static'))
 // 在 app 上注册路由模块
 app.use('/data', router)
+app.use('/', myRouter)
 
 const server = http.createServer(app)
 ws(server)
