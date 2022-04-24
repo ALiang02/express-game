@@ -412,5 +412,64 @@ router.post('/room_start', async function (req, res, next) {
   }
   res.send(rep_data)
 })
+
+router.post('/chess_on', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.room
+    const board_id = req.body.board
+    const chess = req.body.data.chess
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) { // 判断是否有这个用户
+      results = await db.query('SELECT host, gamer from room where id = ?', [room_id])
+      if (results.length > 0) { // 判断是否有这个房间
+        results = await db.query('SELECT chesses, status from board where id = ?', [board_id])
+        if (results.length > 0) {
+          let chesses = results[0].chesses
+          const status = 1 - results[0].status
+          if (chesses === '') {
+            chesses = chess.join(',')
+          } else {
+            chesses += ' ' + chess.join(',')
+          }
+          await db.query('UPDATE board SET chesses = ?, status = ? where id = ?', [chesses, status, board_id])
+          rep_data = {
+            code: 0,
+            message: 'success',
+            data: {
+              chess,
+              chessPre: [-1, -1]
+            }
+          }
+        } else {
+          rep_data = {
+            code: 1,
+            message: '棋盘不存在'
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error.message
+    }
+  }
+  res.send(rep_data)
+})
 // 导出路由
 module.exports = router
