@@ -204,6 +204,7 @@ router.post('/room_join', async function (req, res, next) {
   }
   res.send(rep_data)
 })
+
 router.post('/room_quit', async function (req, res, next) {
   let rep_data
   try {
@@ -221,7 +222,14 @@ router.post('/room_quit', async function (req, res, next) {
           await db.query('UPDATE room SET gamer = ?, status = ? WHERE id = ?', [null, 0, room_id])
           rep_data = {
             code: 0,
-            message: 'success'
+            message: 'success',
+            data: {
+              id: -1,
+              name: '',
+              host: '',
+              gamer: '',
+              status: -1
+            }
           }
         } else if (results[0].gamer === null && results[0].host === user_id) {
           await db.query('DELETE FROM room WHERE id = ?', [room_id])
@@ -230,10 +238,17 @@ router.post('/room_quit', async function (req, res, next) {
             message: 'success'
           }
         } else if (results[0].gamer !== null && results[0].host === user_id) {
-          await db.query('UPDATE room SET host = ?, gamer = ? , stauts = ? WHERE id = ?', [results[0].gamer, null, 0, user_id])
+          await db.query('UPDATE room SET host = ?, gamer = ? , status = ? WHERE id = ?', [results[0].gamer, null, 0, room_id])
           rep_data = {
             code: 0,
-            message: 'success'
+            message: 'success',
+            data: {
+              id: -1,
+              name: '',
+              host: '',
+              gamer: '',
+              status: -1
+            }
           }
         } else {
           rep_data = {
@@ -258,6 +273,141 @@ router.post('/room_quit', async function (req, res, next) {
     rep_data = {
       code: 2,
       message: error
+    }
+  }
+  res.send(rep_data)
+})
+
+router.post('/room_ready', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.room
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) { // 判断是否有这个用户
+      results = await db.query('SELECT host, gamer from room where id = ?', [room_id])
+      if (results.length > 0) { // 判断是否有这个房间
+        await db.query('UPDATE room SET status = ? WHERE id = ?', [2, room_id])
+        rep_data = {
+          code: 0,
+          message: 'success',
+          data: {
+            status: 2
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error
+    }
+  }
+  res.send(rep_data)
+})
+
+router.post('/room_ready_cancel', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.room
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) { // 判断是否有这个用户
+      results = await db.query('SELECT host, gamer from room where id = ?', [room_id])
+      if (results.length > 0) { // 判断是否有这个房间
+        await db.query('UPDATE room SET status = ? WHERE id = ?', [1, room_id])
+        rep_data = {
+          code: 0,
+          message: 'success',
+          data: {
+            status: 1
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error
+    }
+  }
+  res.send(rep_data)
+})
+
+router.post('/room_start', async function (req, res, next) {
+  let rep_data
+  try {
+    const account = req.body.account
+    const room_id = req.body.room
+    const hostFirst = req.body.data.hostFirst
+    const db = new DB()
+    await db.init()
+    let results = await db.query('SELECT * FROM user WHERE account = ?', [account])
+    if (results.length > 0) { // 判断是否有这个用户
+      results = await db.query('SELECT host, gamer from room where id = ?', [room_id])
+      if (results.length > 0) { // 判断是否有这个房间
+        const firstHand = hostFirst ? results[0].host : results[0].gamer
+        const secondHand = hostFirst ? results[0].gamer : results[0].host
+        results = await db.query('SELECT * FROM board ORDER BY id DESC LIMIT 1')
+        const board_id = results[0].id + 1
+        await db.query('INSERT INTO board(id,chesses,first_hand,second_hand,status) VALUES(?,?,?,?,?)', [board_id, '', firstHand, secondHand, 0])
+        await db.query('UPDATE room SET status = ?, board = ? WHERE id = ?', [3, board_id, room_id])
+        rep_data = {
+          code: 0,
+          message: 'success',
+          data: {
+            status: 3,
+            board: {
+              id: board_id,
+              chesses: [],
+              status: 0,
+              turn: hostFirst
+            }
+          }
+        }
+      } else {
+        rep_data = {
+          code: 1,
+          message: '房间不存在'
+        }
+      }
+    } else {
+      rep_data = {
+        code: 1,
+        message: '账户不存在'
+      }
+    }
+    await db.exit()
+  } catch (error) {
+    rep_data = {
+      code: 2,
+      message: error.message
     }
   }
   res.send(rep_data)
