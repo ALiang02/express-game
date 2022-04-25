@@ -24,9 +24,27 @@ router.post('/register', async function (req, res, next) {
         code: 0,
         message: '成功',
         data: {
-          account,
-          name
+          user: {
+            account,
+            name
+          },
+          board: {
+            id: -1,
+            turn: false,
+            chesses: [],
+            chessPre: [-1, -1],
+            status: -1, // -1未开始，0先手方，1后手方，2和局，3先手方胜，4后手方胜
+            line: false
+          },
+          room: {
+            id: -1,
+            name: '',
+            host: '',
+            gamer: '',
+            status: -1
+          }
         }
+
       }
     }
     await db.exit()
@@ -53,8 +71,26 @@ router.post('/login', async function (req, res, next) {
           code: 0,
           message: '成功',
           data: {
-            account,
-            name: results[0].name
+            user: {
+              account,
+              name: results[0].name
+            },
+            board: {
+              id: -1,
+              turn: false,
+              chesses: [],
+              chessPre: [-1, -1],
+              status: -1, // -1未开始，0先手方，1后手方，2和局，3先手方胜，4后手方胜
+              line: false
+            },
+            room: {
+              id: -1,
+              name: '',
+              host: '',
+              gamer: '',
+              status: -1
+            }
+
           }
         }
       } else {
@@ -230,7 +266,7 @@ router.post('/room_quit', async function (req, res, next) {
         const io = getIo()
         const empty_data = {
           board: {
-            id: '',
+            id: -1,
             turn: false,
             chesses: [],
             chessPre: [-1, -1],
