@@ -1,50 +1,29 @@
 const { Server } = require('socket.io')
+let io
 
-module.exports = function (server) {
-  const io = new Server(server, {
+const socketInit = function (server) {
+  io = new Server(server, {
     cors: {
       origin: '*'
     }
   })
 
   io.on('connection', socket => {
+    console.log(socket.id)
     socket.emit('success', { message: '我连接到服务器' })
+    socket.on('join_room', (data) => {
+      console.log('socket.id:', socket.id)
+      console.log('join_room:', data)
+      socket.join('' + data.room)
+    })
 
-    socket.on('disconnect', () => {
-      console.log(socket.id)
-      socket.emit('quit', socket.id)
-    })
-    socket.on('mytask', e => {
-      console.log(e.data)
-      console.log(e.data.a)
-    })
-    socket.on('room_join', data => {
-      console.log('room:join')
-      socket.join(data.room)
-      socket.to(data.room).emit('room_join', { user: data.user })
-    })
-    socket.on('room_create', data => {
-      socket.join(data.room)
-    })
-    socket.on('room_quit', data => {
-      socket.leave(data.room)
-      socket.to(data.room).emit('room_quit', { isHost: data.isHost })
-    })
-    socket.on('room_ready', data => {
-      socket.to(data.room).emit('room_ready', { status: data.status })
-    })
-    socket.on('room_ready_cancel', data => {
-      socket.to(data.room).emit('room_ready_cancel', { status: data.status })
-    })
-    socket.on('room_start', data => {
-      socket.to(data.room).emit('room_start', { status: data.status, turn: data.turn })
-    })
-    socket.on('xiaqi', data => {
-      socket.to(data.room).emit('xiaqi', { qizi: data.qizi })
-    })
-    socket.on('victory', data => {
-      socket.to(data.room).emit('victory', { line: data.line })
+    socket.on('disconnect', (reason) => {
+      console.log('disconnect reason:', reason)
     })
   })
+}
+const getIo = function () {
   return io
 }
+
+module.exports = { getIo, socketInit }

@@ -5,7 +5,7 @@ const bodyParser = require('body-parser')
 const http = require('http')
 const router = require('./routes')
 const myRouter = require('./router')
-const ws = require('./ws')
+const { socketInit } = require('./ws')
 
 const app = express()
 
@@ -30,7 +30,7 @@ app.use('/data', router)
 app.use('/', myRouter)
 
 const server = http.createServer(app)
-ws(server)
+socketInit(server)
 
 server.listen(3000, () => {
   console.log('express 服务器运行在 http://127.0.0.1:3000')
